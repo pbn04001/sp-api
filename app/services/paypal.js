@@ -18,12 +18,12 @@ module.exports = {
         'Authorization': `Basic ${auth}`
       }
     })
-        .then(response => {
+        .then(function(response) {
           return {
             accessToken: response.access_token,
             expires: moment().add(response.expires_in, 'seconds')
           }
-        }).catch(error => ({ error }))
+        })
   },
   getPaymentDetails: ({ accessToken, paymentId }) => {
     return request({
@@ -34,9 +34,10 @@ module.exports = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`
       }
-    }).then(response => {
-      debugger;
-      console.log(response)
-    }).catch(error => ({ error }))
+    })
+        .then(function(response) {
+          return response
+        })
+
   }
 }
