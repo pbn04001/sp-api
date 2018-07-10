@@ -3,4 +3,7 @@
 # dependencies
 /node_modules
 
+# configs
+/config
+
 .idea
