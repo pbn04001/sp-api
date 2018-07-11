@@ -22,6 +22,8 @@ async function getPaypalPayment(paymentId) {
     }
   } catch (error) {
     console.log(error)
+    handleCriticalError(`Unable to retrieve payment info from paypal ${paymentId}`,
+        'Please reach out to customer to either refund or manually process order')
     throwError(constants.ERROR_TYPES.PAY_PAL_GET_PAYMENT_FAILED, error)
   }
 }
@@ -42,31 +44,40 @@ async function getDrupalNodes(paypalPayment) {
     }))
   } catch (error) {
     console.log(error)
-    throwError(constants.ERROR_TYPES.DRUPAL_GET_NODES_FAILED, error)
+    try {
+      PayPayService.refundPaypalPayment(paypalPayment.accessToken, paypalPayment.payment)
+      throwError(constants.ERROR_TYPES.DRUPAL_GET_NODES_FAILED, error)
+    } catch (error) {
+      handleCriticalError(`Unable to refund money for ${paypalPayment.payment.paymentId}`,
+          'Issue occurred while trying to update drupal, so a refund was attempted and failed.\n' +
+          'Please reach out to customer to either refund or manually process order.\n' +
+          JSON.stringify(paypalPayment.payment))
+      throwError(constants.ERROR_TYPES.PAY_PAL_UNABLE_TO_REFUND)
+    }
   }
   drupalNodes.forEach(node => {
     if (node.quantity < node.purchasedQuantity) {
-       try {
-         PayPayService.refundPaypalPayment(paypalPayment.accessToken, paypalPayment.payment)
-         throwError(constants.ERROR_TYPES.PURCHASED_ITEMS_NO_LONGER_AVAILABLE)
-       } catch(error) {
-         handleCriticalError(`Unable to refund money for ${paypalPayment.payment.paymentId}`,
-             'Item was out of stock, so a refund was attempted and failed.\n' +
-             'Please manually refund this users payment\n' +
-             JSON.stringify(paypalPayment.payment))
-         throwError(constants.ERROR_TYPES.PAY_PAL_UNABLE_TO_REFUND)
-       }
+      try {
+        PayPayService.refundPaypalPayment(paypalPayment.accessToken, paypalPayment.payment)
+        throwError(constants.ERROR_TYPES.PURCHASED_ITEMS_NO_LONGER_AVAILABLE)
+      } catch (error) {
+        handleCriticalError(`Unable to refund money for ${paypalPayment.payment.paymentId}`,
+            'Item was out of stock, so a refund was attempted and failed.\n' +
+            'Please reach out to customer to either refund or manually process order.\n' +
+            JSON.stringify(paypalPayment.payment))
+        throwError(constants.ERROR_TYPES.PAY_PAL_UNABLE_TO_REFUND)
+      }
     }
     drupalItemsTotal += node.price * node.purchasedQuantity
   })
   if (purchaseTotal !== drupalItemsTotal) {
     try {
       PayPayService.refundPaypalPayment(paypalPayment.accessToken, paypalPayment.payment)
-      throwError( constants.ERROR_TYPES.PAY_PAL_NOT_MATCHING_DRUPAL)
-    } catch(error) {
+      throwError(constants.ERROR_TYPES.PAY_PAL_NOT_MATCHING_DRUPAL)
+    } catch (error) {
       handleCriticalError(`Unable to refund money for ${paypalPayment.payment.paymentId}`,
           'Items purchased prices do not match drupal items, so a refund was attempted and failed.\n' +
-          'Please manually refund this users payment\n' +
+          'Please reach out to customer to either refund or manually process order.\n' +
           JSON.stringify(paypalPayment.payment))
       throwError(constants.ERROR_TYPES.PAY_PAL_UNABLE_TO_REFUND)
     }
@@ -74,33 +85,44 @@ async function getDrupalNodes(paypalPayment) {
   return drupalNodes
 }
 
-async function updateDrupalNodes(paypalInfo, drupalNodes) {
+async function updateDrupalNodes(paypalInfo, drupalNodes, paypalPayment) {
   try {
-     const results = await Promise.all(drupalNodes.map(node => {
-       return DrupalService.updateNodeQuantity(node)
-     }))
+    const results = await Promise.all(drupalNodes.map(node => {
+      return DrupalService.updateNodeQuantity(node)
+    }))
     return results
   } catch (error) {
-    handleCriticalError(`Error occurred updating drupal for purchase ${paypalInfo.paymentId}`, paypalInfo)
+    handleCriticalError(`Error occurred updating drupal for purchase ${paypalInfo.paymentId}`,
+        'Payment was successful, but was unable to update drupal product quantities.' +
+        'Please manually go in and update these products.\n' +
+        JSON.stringify(paypalPayment.payment))
+
     console.log(error)
     throwError(constants.ERROR_TYPES.DRUPAL_UPDATE_NODES_FAILED, error)
   }
 }
 
 async function completePurchase(req, res) {
+  let paypalPayment
   try {
     const values = req.body
-    const paypalPayment = await getPaypalPayment(values.paymentId)
+    paypalPayment = await getPaypalPayment(values.paymentId)
     const drupalNodes = await getDrupalNodes(paypalPayment)
-    const results = await updateDrupalNodes(values, drupalNodes)
+    const results = await updateDrupalNodes(values, drupalNodes, paypalPayment)
     res.statusCode = 200
     return res.json({ success: true, results })
-  } catch(error) {
+  } catch (error) {
     res.statusCode = 500
     if (!!error.type) {
       return res.json(error)
     }
     console.log(error)
+    let body = 'Unexpected Error:\n' + JSON.stringify(error) +
+        'Please reach out to customer to either refund or manually process order.\n'
+    if (paypalPayment) {
+      body += JSON.stringify(paypalPayment.payment)
+    }
+    handleCriticalError(`Unexpected error occurred!!`, body)
     return res.json({ type: constants.ERROR_TYPES.UNEXPECTED_ERROR, error })
   }
 }
