@@ -18,7 +18,7 @@ module.exports = {
         'Authorization': `Basic ${auth}`
       }
     })
-        .then(function(response) {
+        .then(function (response) {
           return {
             accessToken: response.access_token,
             expires: moment().add(response.expires_in, 'seconds')
@@ -35,9 +35,18 @@ module.exports = {
         'Authorization': `Bearer ${accessToken}`
       }
     })
-        .then(function(response) {
-          return response
-        })
-
+  },
+  refundPaypalPayment: (accessToken, paypalPayment) => {
+    const links = paypalPayment.transactions[0].related_resources[0].sale.links
+    const refundLink = links.find(link => link.rel === 'refund')
+    return request({
+      url: refundLink.href,
+      method: 'POST',
+      json: {},
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
   }
 }
