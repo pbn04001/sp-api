@@ -6,7 +6,7 @@ module.exports = {
   getAuthorizationToken: () => {
     const auth = Buffer.from(config.clientId + ":" + config.secret).toString("base64")
     return request({
-      uri: 'https://api.sandbox.paypal.com/v1/oauth2/token',
+      uri: `${config.paypal_endpoint}/v1/oauth2/token`,
       method: 'POST',
       json: true,
       form: {
@@ -27,7 +27,7 @@ module.exports = {
   },
   getPaymentDetails: ({ accessToken, paymentId }) => {
     return request({
-      url: `https://api.sandbox.paypal.com/v1/payments/payment/${paymentId}`,
+      url: `${config.paypal_endpoint}/v1/payments/payment/${paymentId}`,
       method: 'GET',
       json: true,
       headers: {

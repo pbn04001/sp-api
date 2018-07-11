@@ -4,7 +4,6 @@
 /node_modules
 
 # configs
-/config/dev.config.js
-/config/index.js
+/config
 
 .idea
