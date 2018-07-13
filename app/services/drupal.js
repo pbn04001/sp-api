@@ -13,7 +13,7 @@ module.exports = {
     }).then(response => ({
       ...response,
       price: parseFloat(response.field_price[0].value),
-      quantity: parseInt(response.field_quantity[0].value),
+      stock: parseInt(response.field_stock[0].value),
     }))
   },
   updateNodeQuantity: (node) => {

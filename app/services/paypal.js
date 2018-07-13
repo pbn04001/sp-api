@@ -48,5 +48,33 @@ module.exports = {
         'Authorization': `Bearer ${accessToken}`
       }
     })
+  },
+  createPaypalPayment: (items, total) => {
+    return request.post(`${config.paypal_endpoint}/v1/payments/payment`, {
+      auth: {
+        user: config.clientId,
+        pass: config.secret,
+      },
+      body: {
+        intent: 'sale',
+        payer: {
+          payment_method: 'paypal'
+        },
+        transactions: [{
+          amount: {
+            total: total,
+            currency: 'USD'
+          },
+          item_list: {
+            items,
+          }
+        }],
+        redirect_urls: {
+          return_url: config.iamspacecak_endpoint,
+          cancel_url: config.iamspacecak_endpoint,
+        }
+      },
+      json: true
+    })
   }
 }
