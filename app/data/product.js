@@ -39,14 +39,14 @@ async function verifyDrupalProducts(items, total) {
   return drupalNodes
 }
 
-async function updateDrupalNodes(paypalPayment, drupalNodes) {
+async function updateDrupalNodes(paymentId, drupalNodes) {
   try {
     drupalNodes.map(node => {
-      DrupalService.updateNodeQuantity(node)
+      DrupalService.updateNodeStock(node)
     })
   } catch (error) {
     console.log(error)
-    handleCriticalError(`Error occurred updating drupal for purchase ${paypalPayment.paymentId}`,
+    handleCriticalError(`Error occurred updating drupal for purchase ${paymentId}`,
         'Payment was successful, but was unable to update drupal product quantities.' +
         `Please manually go in and update these products.\n\n${JSON.stringify(error)}`)
   }
@@ -121,7 +121,7 @@ module.exports = {
       const total = parseFloat(transaction.amount.total)
       const drupalNodes = await verifyDrupalProducts(transaction.item_list.items, total)
       const results = await executePaypalPayment(paymentId, payerId, total)
-      updateDrupalNodes(paypalPayment, drupalNodes)
+      updateDrupalNodes(paymentId, drupalNodes)
       res.statusCode = 200
       res.json({ success: true, results })
 

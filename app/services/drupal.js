@@ -16,9 +16,9 @@ module.exports = {
       stock: parseInt(response.field_stock[0].value),
     }))
   },
-  updateNodeQuantity: (node) => {
+  updateNodeStock: (node) => {
     const nodeId = node.nid[0].value
-    const updatedQuantity = node.stock - node.quantity
+    const updatedStock = node.stock - node.quantity
     const auth = Buffer.from(config.drupal_admin.username + ":" + config.drupal_admin.password).toString("base64")
     return request({
       uri: `${config.drupal_endpoint}/node/${nodeId}?_format=json`,
@@ -26,7 +26,7 @@ module.exports = {
       json: {
         nid: [{ value: nodeId }],
         type: [{ target_id: "products" }],
-        field_quantity: [{ value: updatedQuantity }]
+        field_stock: [{ value: updatedStock }]
       },
       headers: {
         'Content-Type': 'application/json',
