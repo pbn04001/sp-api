@@ -18,7 +18,7 @@ module.exports = {
   },
   updateNodeQuantity: (node) => {
     const nodeId = node.nid[0].value
-    const updatedQuantity = node.quantity - node.purchasedQuantity
+    const updatedQuantity = node.stock - node.quantity
     const auth = Buffer.from(config.drupal_admin.username + ":" + config.drupal_admin.password).toString("base64")
     return request({
       uri: `${config.drupal_endpoint}/node/${nodeId}?_format=json`,

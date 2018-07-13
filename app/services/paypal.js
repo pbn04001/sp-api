@@ -76,5 +76,23 @@ module.exports = {
       },
       json: true
     })
+  },
+  executePaypalPayment: (paymentId, payerId, total) => {
+    return request.post(`${config.paypal_endpoint}/v1/payments/payment/${paymentId}/execute`, {
+      auth: {
+        user: config.clientId,
+        pass: config.secret,
+      },
+      body: {
+        payer_id: payerId,
+        transactions: [{
+          amount: {
+            total: total,
+            currency: 'USD'
+          }
+        }]
+      },
+      json: true
+    })
   }
 }
