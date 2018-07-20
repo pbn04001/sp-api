@@ -6,7 +6,8 @@
   "scripts": {
     "start:dev": "NODE_ENV=development node server",
     "start:prod": "NODE_ENV=production node server",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy:prod": "scp -r ./app/* root@206.189.208.217:/usr/local/nodeapi/sp-api/app/;scp -r ./config/* root@206.189.208.217:/usr/local/nodeapi/sp-api/config/;scp -r ./server.js ./package.json root@206.189.208.217:/usr/local/nodeapi/sp-api/"
   },
   "author": "",
   "license": "ISC",
