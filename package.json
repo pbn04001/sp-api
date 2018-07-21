@@ -5,9 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start:dev": "NODE_ENV=development node server",
-    "start:prod": "NODE_ENV=production node server",
+    "start:prod": "NODE_ENV=production node server >log-file.txt 2>error-file.txt",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy:prod": "scp -r ./app/* root@206.189.208.217:/usr/local/nodeapi/sp-api/app/;scp -r ./config/* root@206.189.208.217:/usr/local/nodeapi/sp-api/config/;scp -r ./server.js ./package.json root@206.189.208.217:/usr/local/nodeapi/sp-api/"
+    "deploy:prod": "scp -r ./app/* root@206.189.208.217:/root/sp-api/app/;scp -r ./config/* root@206.189.208.217:/root/sp-api/config/;scp -r ./server.js ./package.json root@206.189.208.217:/root/sp-api/;scp -r ./sp_api.service root@206.189.208.217:/etc/systemd/system/"
   },
   "author": "",
   "license": "ISC",

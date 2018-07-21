@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // server.js
 const express = require('express')
 
