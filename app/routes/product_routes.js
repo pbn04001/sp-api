@@ -1,5 +1,5 @@
 const productPath = '/product'
-const { createPayment, executePayment } = require('../data/product')
+const { createPayment, executePayment } = require('../utils/product')
 
 module.exports = async function (app, db) {
   app.post(`${productPath}/create-payment`, (req, res) => {

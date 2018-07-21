@@ -2,10 +2,13 @@ const { PayPayService, DrupalService } = require('../services')
 const constants = require('../constants')
 const { handleCriticalError } = require('../utils/error')
 
-const throwError = (type, error) => {
+const throwError = (type, error, extra = {}) => {
   const newError = new Error(error)
   newError.type = type
-  throw newError
+  throw {
+    ...newError,
+    ...extra
+  }
 }
 
 async function verifyDrupalProducts(items, total) {
@@ -23,14 +26,14 @@ async function verifyDrupalProducts(items, total) {
           })
     }))
   } catch (error) {
-    console.log(error)
+    console.error(error)
     handleCriticalError(`Unable to get drupal nodes`,
         JSON.stringify(error))
     throwError(constants.ERROR_TYPES.DRUPAL_GET_NODES_FAILED, error)
   }
   drupalNodes.forEach(node => {
     if (node.stock < node.quantity) {
-      throwError(constants.ERROR_TYPES.PURCHASED_ITEMS_NO_LONGER_AVAILABLE)
+      throwError(constants.ERROR_TYPES.PURCHASED_ITEMS_NO_LONGER_AVAILABLE, null, { itemId: node.nid })
     }
   })
   if (purchaseTotal !== total) {
@@ -45,7 +48,7 @@ async function updateDrupalNodes(paymentId, drupalNodes) {
       DrupalService.updateNodeStock(node)
     })
   } catch (error) {
-    console.log(error)
+    console.error(error)
     handleCriticalError(`Error occurred updating drupal for purchase ${paymentId}`,
         'Payment was successful, but was unable to update drupal product quantities.' +
         `Please manually go in and update these products.\n\n${JSON.stringify(error)}`)
@@ -57,7 +60,7 @@ async function createPaypalPayment(items, total) {
     const paypalPayment = await PayPayService.createPaypalPayment(items, total)
     return paypalPayment
   } catch (error) {
-    console.log(error)
+    console.error(error)
     handleCriticalError(`Unable to create paypal payment`,
         JSON.stringify(error))
     throwError(constants.ERROR_TYPES.UNABLE_TO_CREATE_PAYPAL_PAYMENT, error)
@@ -73,7 +76,7 @@ async function getPaypalPayment(paymentId) {
     })
     return paypalPayment
   } catch (error) {
-    console.log(error)
+    console.error(error)
     handleCriticalError(`Unable to retrieve payment info from paypal ${paymentId}`,
         JSON.stringify(error))
     throwError(constants.ERROR_TYPES.UNABLE_TO_RETRIEVE_PAYPAL_PAYMENT, error)
@@ -85,7 +88,7 @@ async function executePaypalPayment(paymentId, payerId, total) {
     const paypalPayment = await PayPayService.executePaypalPayment(paymentId, payerId, total)
     return paypalPayment
   } catch (error) {
-    console.log(error)
+    console.error(error)
     handleCriticalError(`Unable to execute payment info from paypal ${paymentId}`,
         JSON.stringify(error))
     throwError(constants.ERROR_TYPES.UNABLE_TO_EXECUTE_PAYPAL_PAYMENT, error)
@@ -103,14 +106,13 @@ module.exports = {
         id: response.id
       });
     } catch (error) {
-      res.statusCode = 500
       if (!!error.type) {
-        return res.json(error)
+        return res.status(200).json({error});
       }
-      console.log(error)
+      console.error(error)
       handleCriticalError(`Unexpected error occurred!!`, 'Unexpected Error:\n' + JSON.stringify(error) +
           `Failed to create payment with paypal.\n\n${JSON.stringify(error)}`)
-      return res.json({ type: constants.ERROR_TYPES.UNEXPECTED_ERROR, error })
+      return res.status(500).json({ type: constants.ERROR_TYPES.UNEXPECTED_ERROR, error })
     }
   },
   executePayment: async function (req, res) {
@@ -128,12 +130,12 @@ module.exports = {
     } catch (error) {
       res.statusCode = 500
       if (!!error.type) {
-        return res.json(error)
+        return res.status(200).json({error});
       }
-      console.log(error)
+      console.error(error)
       handleCriticalError(`Unexpected error occurred!!`, 'Unexpected Error:\n' + JSON.stringify(error) +
           `Failed to execute payment with paypal ${paymentId}\n\n${JSON.stringify(error)}`)
-      return res.json({ type: constants.ERROR_TYPES.UNEXPECTED_ERROR, error })
+      return res.status(500).json({ type: constants.ERROR_TYPES.UNEXPECTED_ERROR, error })
     }
   }
 }
