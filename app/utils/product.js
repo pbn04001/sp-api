@@ -33,7 +33,7 @@ async function verifyDrupalProducts(items, total) {
   }
   drupalNodes.forEach(node => {
     if (node.stock < node.quantity) {
-      throwError(constants.ERROR_TYPES.PURCHASED_ITEMS_NO_LONGER_AVAILABLE, null, { itemId: node.nid })
+      throwError(constants.ERROR_TYPES.PURCHASED_ITEMS_NO_LONGER_AVAILABLE, null, { itemId: node.sku })
     }
   })
   if (purchaseTotal !== total) {
