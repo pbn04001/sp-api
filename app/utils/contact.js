@@ -16,7 +16,7 @@ async function sendEmail(name, email, message) {
     to: config.contact_email.to,
     replyTo: email,
     subject: subject,
-    html: JSON.stringify(body.join('<br/><br/>'))
+    html: body.join('<br/><br/>')
   }
   const transporter = nodemailer.createTransport({
     service: 'gmail',
