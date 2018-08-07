@@ -70,8 +70,8 @@ module.exports = {
           }
         }],
         redirect_urls: {
-          return_url: config.iamspacecak_endpoint,
-          cancel_url: config.iamspacecak_endpoint,
+          return_url: config.paypal_redirect.return_url,
+          cancel_url: config.paypal_redirect.cancel_url,
         }
       },
       json: true

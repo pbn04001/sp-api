@@ -83,6 +83,21 @@ async function getPaypalPayment(paymentId) {
   }
 }
 
+async function getPaypalPaymentWithToken(paymentId, token) {
+  try {
+    const paypalPayment = await PayPayService.getPaymentDetails({
+      accessToken: token,
+      paymentId: paymentId,
+    })
+    return paypalPayment
+  } catch (error) {
+    console.error(error)
+    handleCriticalError(`Unable to retrieve payment info from paypal ${paymentId}`,
+        JSON.stringify(error))
+    throwError(constants.ERROR_TYPES.UNABLE_TO_RETRIEVE_PAYPAL_PAYMENT, error)
+  }
+}
+
 async function executePaypalPayment(paymentId, payerId, total) {
   try {
     const paypalPayment = await PayPayService.executePaypalPayment(paymentId, payerId, total)
@@ -103,8 +118,10 @@ module.exports = {
       const response = await createPaypalPayment(items, total)
       res.statusCode = 200
       res.json({
-        id: response.id
+        id: response.id,
+        links: response.links,
       });
+      console.log(`PayPalID: ${response.id}`)
     } catch (error) {
       if (!!error.type) {
         return res.status(200).json({error});
@@ -123,10 +140,43 @@ module.exports = {
       const total = parseFloat(transaction.amount.total)
       const drupalNodes = await verifyDrupalProducts(transaction.item_list.items, total)
       const results = await executePaypalPayment(paymentId, payerId, total)
+      console.log(`PayPal Results: ${JSON.stringify({
+        id: results.id,
+        state: results.state,
+        payer: results.payer,
+      })}`)
       updateDrupalNodes(paymentId, drupalNodes)
       res.statusCode = 200
       res.json({ success: true, results })
 
+    } catch (error) {
+      res.statusCode = 500
+      if (!!error.type) {
+        return res.status(200).json({error});
+      }
+      console.error(error)
+      handleCriticalError(`Unexpected error occurred!!`, 'Unexpected Error:\n' + JSON.stringify(error) +
+          `Failed to execute payment with paypal ${paymentId}\n\n${JSON.stringify(error)}`)
+      return res.status(500).json({ type: constants.ERROR_TYPES.UNEXPECTED_ERROR, error })
+    }
+  },
+  retrievePayment: async function (req, res) {
+    const paymentId = req.params.paymentId
+    const payerId = req.params.payerId
+    try {
+      const paypalPayment = await getPaypalPayment(paymentId)
+      const transaction = paypalPayment.transactions[0]
+      const total = parseFloat(transaction.amount.total)
+      const drupalNodes = await verifyDrupalProducts(transaction.item_list.items, total)
+      const results = await executePaypalPayment(paymentId, payerId, total)
+      console.log(`PayPal Results: ${JSON.stringify({
+        id: results.id,
+        state: results.state,
+        payer: results.payer,
+      })}`)
+      updateDrupalNodes(paymentId, drupalNodes)
+      res.statusCode = 200
+      res.json({ success: true, results })
     } catch (error) {
       res.statusCode = 500
       if (!!error.type) {
